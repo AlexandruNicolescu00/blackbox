@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Blackbox</string>
+    <string name="home_nav_label">Home</string>
+    <string name="app_usage_nav_label">App usage</string>
+    <string name="send_log_nav_label">Send log</string>
+    <string name="settings_nav_label">Settings</string>
+    <string name="app_usage_permission_permanently_declined">App usage permission is permanently declined.\\nYou can go to the app settings to grant it.</string>
+    <string name="app_usage_permission_description">This app needs access to app usage in order to track your apps usage.</string>
+    <string name="grant_permission">Grant permission</string>
+    <string name="permission_required">Permission required</string>
+    <string name="no_usage_stats_found">There is no activity recorded</string>
+    <string name="app_description">Monitor app usage while driving and maintain safety on the road</string>
+    <string name="app_welcome">Welcome to Blackbox</string>
+    <string name="app_instruction">You can choose whether to start recording manually and send it from the app usage panel or to record it automatically, choosing every how many seconds to send the recording.</string>
+    <string name="manual_recording">Manual</string>
+    <string name="automatic_recording">Automatic</string>
+    <string name="time_to_send">Send every</string>
+    <string name="start_recording">Start recording</string>
+    <string name="stop_recording">Stop recording</string>
+    <string name="send_logs">Send logs</string>
+    <string name="started_at">Recording from:</string>
+    <string name="date">Date</string>
+    <string name="ascending">Ascending</string>
+    <string name="descending">Descending</string>
+    <string name="records_nav_label">Records</string>
+    <string name="record_detail_nav_label">Record detail</string>
+    <string name="sort">Sort</string>
+</resources>
