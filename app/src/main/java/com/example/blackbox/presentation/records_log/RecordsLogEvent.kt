@@ -1,6 +1,6 @@
 package com.example.blackbox.presentation.records_log
 
-import com.example.blackbox.domain.util.RecordsLogOrder
+import com.example.blackbox.domain.common.RecordsLogOrder
 
 sealed class RecordsLogEvent {
     data object ToggleOrderSection: RecordsLogEvent()

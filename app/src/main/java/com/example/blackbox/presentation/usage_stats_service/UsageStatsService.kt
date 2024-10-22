@@ -9,13 +9,15 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.example.blackbox.R
 import com.example.blackbox.data.app_usage.AppUsage
+import com.example.blackbox.data.repository.RecordingState
 import com.example.blackbox.data.recorded_usage_stats.RecordedUsageStats
-import com.example.blackbox.data.usage_stats_manager.AppUsageStatsManager
-import com.example.blackbox.data.utility.REFRESH_INTERVAL
+import com.example.blackbox.data.manager.AppUsageStatsManager
+import com.example.blackbox.common.REFRESH_INTERVAL
 import com.example.blackbox.domain.repository.AppUsageRepository
 import com.example.blackbox.domain.repository.RecordedUsageStatsRepository
 import com.example.blackbox.domain.repository.UserPreferencesRepository
@@ -46,6 +48,7 @@ class UsageStatsService : Service() {
     private val serviceJob = Job()
     private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
 
+    private var lastWorkMode: Boolean? = null
     private var recordId: Long = 0
     private var startedAt: Long? = null
     private var finishedAt: Long? = null
@@ -53,16 +56,15 @@ class UsageStatsService : Service() {
     private var seconds: Long = 0
     private var isAutoStart: Boolean = false
     private val currentUsageStats = ArrayDeque<AppUsage>()
-    private val newElements = Stack<AppUsage>()
     private var getUsageStatsJob: Job? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-
+        Log.d("UsageStatsService", "Service started and $lastWorkMode")
         val notification = createNotification()
         ServiceCompat.startForeground(
             this,
-            856,
+            1,
             notification,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
@@ -79,10 +81,16 @@ class UsageStatsService : Service() {
         serviceScope.launch {
             userPreferencesRepository.isAutoStartFlow.collect { isAutoStartFlow ->
                 isAutoStart = isAutoStartFlow
-                if (isAutoStart) {
-                    startAutoCollection()
-                } else {
-                    startUsageStatsCollection()
+                if (lastWorkMode != null && lastWorkMode != isAutoStart) { // if toggle automatic mode stop recording
+                    stopSelf()
+                }
+                lastWorkMode = isAutoStart
+                if (getUsageStatsJob == null) {
+                    if (isAutoStart) {
+                        startAutoCollection()
+                    } else {
+                        startUsageStatsCollection()
+                    }
                 }
             }
         }
@@ -102,7 +110,7 @@ class UsageStatsService : Service() {
                 }
                 saveRecord()
             }
-            onDestroy()
+            stopSelf()
         }
     }
 
@@ -128,7 +136,7 @@ class UsageStatsService : Service() {
             if (isAutoStart) {
                 userPreferencesRepository.toggleAutoStartMode()
             }
-            onDestroy()
+            stopSelf()
             emptyList()
         }
 
@@ -141,6 +149,7 @@ class UsageStatsService : Service() {
         }
 
         var j = 0
+        val newElements = Stack<AppUsage>()
 
         while (filteredUsageStats.size > j && currentUsageStats.firstOrNull()?.packageName != filteredUsageStats[j].packageName) {
             newElements.push(filteredUsageStats[j])
@@ -154,10 +163,27 @@ class UsageStatsService : Service() {
                 appUsageRepository.insertAppUsage(newElement)
             }
         }
+        updateRecordingState(isRecording = true)
+    }
+
+    private fun updateRecordingState(isRecording: Boolean) {
+        val scope = CoroutineScope(Dispatchers.Main)
+        scope.launch {
+            appUsageRepository.setRecordingState(
+                RecordingState(
+                    appUsages = currentUsageStats.toList(),
+                    isRecording = isRecording,
+                    startedAt = startedAt,
+                    finishedAt = finishedAt
+                )
+            )
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        Log.d("UsageStatsService", "Service destroyed")
+        lastWorkMode = null
         serviceScope.launch {
             saveRecord()
             serviceJob.cancel()
@@ -173,39 +199,29 @@ class UsageStatsService : Service() {
         record = record!!.copy(
             id = recordId
         )
+        currentUsageStats.clear()
     }
 
     private suspend fun saveRecord() {
+        finishedAt = System.currentTimeMillis()
+        updateRecordingState(isRecording = false)
         val recordsNumber = appUsageRepository.countAppUsageByRecordingId(recordId)
         if (recordsNumber == 0) { // Don't save empty records
             recordedUsageStatsRepository.deleteRecordedUsageStats(record!!)
         } else {
-            finishedAt = System.currentTimeMillis()
             record = record!!.copy(
                 endedAt = finishedAt!!
             )
             recordedUsageStatsRepository.updateRecordedUsageStats(record!!)
         }
+        finishedAt = null
+
     }
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
 
-    private fun createNotification(): Notification {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            CHANNEL_NAME,
-            NotificationManager.IMPORTANCE_HIGH
-        )
-        val notificationManager = getSystemService(NotificationManager::class.java)
-        notificationManager.createNotificationChannel(channel)
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setOngoing(true)
-            .setContentTitle("Usage Stats Service")
-            .setContentText("Collecting usage stats...")
-            .setSmallIcon(R.drawable.baseline_visibility_24)
-            .build()
-    }
+
 }

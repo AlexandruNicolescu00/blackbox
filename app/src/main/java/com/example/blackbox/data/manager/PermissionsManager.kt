@@ -1,4 +1,4 @@
-package com.example.blackbox.data.permissions
+package com.example.blackbox.data.manager
 
 import android.app.AppOpsManager
 import android.content.Context

@@ -1,4 +1,4 @@
-package com.example.blackbox.domain.util
+package com.example.blackbox.domain.common
 
 sealed class OrderType {
     data object Ascending: OrderType()

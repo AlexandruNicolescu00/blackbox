@@ -1,4 +1,4 @@
-package com.example.blackbox.domain.util
+package com.example.blackbox.domain.common
 
 sealed class RecordsLogOrder(val orderType: OrderType) {
     class Date(orderType: OrderType): RecordsLogOrder(orderType)

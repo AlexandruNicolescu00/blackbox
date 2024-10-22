@@ -2,8 +2,8 @@ package com.example.blackbox.domain.use_case
 
 import com.example.blackbox.data.recorded_usage_stats.RecordedUsageStats
 import com.example.blackbox.domain.repository.RecordedUsageStatsRepository
-import com.example.blackbox.domain.util.OrderType
-import com.example.blackbox.domain.util.RecordsLogOrder
+import com.example.blackbox.domain.common.OrderType
+import com.example.blackbox.domain.common.RecordsLogOrder
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

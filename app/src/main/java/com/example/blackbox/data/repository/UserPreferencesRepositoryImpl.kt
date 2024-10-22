@@ -1,11 +1,11 @@
-package com.example.blackbox.data
+package com.example.blackbox.data.repository
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import com.example.blackbox.data.utility.AUTO_START
-import com.example.blackbox.data.utility.BACKGROUND
-import com.example.blackbox.data.utility.SECONDS_TO_SEND
+import com.example.blackbox.common.AUTO_START
+import com.example.blackbox.common.BACKGROUND
+import com.example.blackbox.common.SECONDS_TO_SEND
 import com.example.blackbox.domain.repository.UserPreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

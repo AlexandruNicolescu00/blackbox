@@ -1,5 +1,7 @@
-package com.example.blackbox.data.recorded_usage_stats
+package com.example.blackbox.data.repository
 
+import com.example.blackbox.data.recorded_usage_stats.RecordedUsageStats
+import com.example.blackbox.data.recorded_usage_stats.RecordedUsageStatsDao
 import com.example.blackbox.domain.repository.RecordedUsageStatsRepository
 import kotlinx.coroutines.flow.Flow
 

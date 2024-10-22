@@ -3,8 +3,8 @@ package com.example.blackbox.presentation.records_log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.blackbox.domain.use_case.RecordsUseCases
-import com.example.blackbox.domain.util.OrderType
-import com.example.blackbox.domain.util.RecordsLogOrder
+import com.example.blackbox.domain.common.OrderType
+import com.example.blackbox.domain.common.RecordsLogOrder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow

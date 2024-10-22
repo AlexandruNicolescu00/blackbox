@@ -25,4 +25,5 @@
     <string name="records_nav_label">Records</string>
     <string name="record_detail_nav_label">Record detail</string>
     <string name="sort">Sort</string>
+    <string name="go_to_app_usage">Go to app usage</string>
 </resources>

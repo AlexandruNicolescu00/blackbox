@@ -39,7 +39,7 @@ object HomeDestination : NavigationDestination {
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
-    onStartRecording: () -> Unit
+    onClick: () -> Unit
 ) {
     val state = viewModel.state.value
 
@@ -124,10 +124,10 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.space_medium)))
             Button(
                 onClick = {
-                    onStartRecording()
+                    onClick()
                 },
             ) {
-                Text(text = stringResource(R.string.start_recording))
+                Text(text = stringResource(R.string.go_to_app_usage))
             }
         }
 

@@ -10,19 +10,26 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.room.Room
+import com.example.blackbox.common.NETWORK_BASE_URL
 import com.example.blackbox.data.AppDatabase
-import com.example.blackbox.data.UserPreferencesRepositoryImpl
-import com.example.blackbox.data.app_usage.AppUsageRepositoryImpl
-import com.example.blackbox.data.permissions.PermissionsManager
-import com.example.blackbox.data.recorded_usage_stats.RecordedUsageStatsRepositoryImpl
-import com.example.blackbox.data.usage_stats_manager.AppUsageStatsManager
-import com.example.blackbox.data.utility.USER_PREFERENCES
+import com.example.blackbox.data.repository.UserPreferencesRepositoryImpl
+import com.example.blackbox.data.repository.AppUsageRepositoryImpl
+import com.example.blackbox.data.manager.PermissionsManager
+import com.example.blackbox.data.repository.RecordedUsageStatsRepositoryImpl
+import com.example.blackbox.data.manager.AppUsageStatsManager
+import com.example.blackbox.common.USER_PREFERENCES
+import com.example.blackbox.data.remote.IOTAApi
+import com.example.blackbox.data.repository.IOTARepositoryImpl
 import com.example.blackbox.domain.repository.AppUsageRepository
+import com.example.blackbox.domain.repository.IOTARepository
 import com.example.blackbox.domain.repository.RecordedUsageStatsRepository
 import com.example.blackbox.domain.repository.UserPreferencesRepository
+import com.example.blackbox.domain.use_case.GetData
 import com.example.blackbox.domain.use_case.GetRecords
+import com.example.blackbox.domain.use_case.IOTAUseCases
 import com.example.blackbox.domain.use_case.RecordingServiceUseCases
 import com.example.blackbox.domain.use_case.RecordsUseCases
+import com.example.blackbox.domain.use_case.SendData
 import com.example.blackbox.domain.use_case.StartRecordingService
 import com.example.blackbox.domain.use_case.StopRecordingService
 import dagger.Module
@@ -33,6 +40,8 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
 
 @Module
@@ -80,7 +89,7 @@ object AppModule {
             corruptionHandler = ReplaceFileCorruptionHandler(
                 produceNewData = { emptyPreferences() }
             ),
-            migrations = listOf(SharedPreferencesMigration(appContext,USER_PREFERENCES)),
+            migrations = listOf(SharedPreferencesMigration(appContext, USER_PREFERENCES)),
             scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
             produceFile = { appContext.preferencesDataStoreFile(USER_PREFERENCES) }
         )
@@ -106,6 +115,31 @@ object AppModule {
         return RecordingServiceUseCases(
             startRecordingService = StartRecordingService(context),
             stopRecordingService = StopRecordingService(context)
+        )
+    }
+
+    @Singleton
+    @Provides
+    fun provideIOTAApi(): IOTAApi {
+        return Retrofit.Builder()
+            .baseUrl(NETWORK_BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(IOTAApi::class.java)
+    }
+
+    @Singleton
+    @Provides
+    fun provideIOTARepository(api: IOTAApi): IOTARepository {
+        return IOTARepositoryImpl(api)
+    }
+
+    @Singleton
+    @Provides
+    fun provideIOTAUseCases(repository: IOTARepository): IOTAUseCases {
+        return IOTAUseCases(
+            getData = GetData(repository),
+            sendData = SendData(repository)
         )
     }
 }

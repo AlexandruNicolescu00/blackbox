@@ -10,8 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.example.blackbox.R
-import com.example.blackbox.domain.util.OrderType
-import com.example.blackbox.domain.util.RecordsLogOrder
+import com.example.blackbox.domain.common.OrderType
+import com.example.blackbox.domain.common.RecordsLogOrder
 
 @Composable
 fun OrderSection(

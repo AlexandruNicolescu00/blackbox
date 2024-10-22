@@ -1,8 +1,8 @@
 package com.example.blackbox.presentation.records_log
 
 import com.example.blackbox.data.recorded_usage_stats.RecordedUsageStats
-import com.example.blackbox.domain.util.OrderType
-import com.example.blackbox.domain.util.RecordsLogOrder
+import com.example.blackbox.domain.common.OrderType
+import com.example.blackbox.domain.common.RecordsLogOrder
 
 data class RecordsLogState(
     val records: List<RecordedUsageStats> = emptyList(),

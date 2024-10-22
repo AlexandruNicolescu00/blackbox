@@ -1,7 +1,6 @@
 package com.example.blackbox
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -10,7 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
-import com.example.blackbox.data.permissions.PermissionsManager
+import com.example.blackbox.data.manager.PermissionsManager
 import com.example.blackbox.domain.repository.UserPreferencesRepository
 import com.example.blackbox.domain.use_case.RecordingServiceUseCases
 import com.example.blackbox.presentation.BlackboxApp

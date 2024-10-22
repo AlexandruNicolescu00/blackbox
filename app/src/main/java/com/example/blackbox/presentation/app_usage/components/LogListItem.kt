@@ -25,7 +25,7 @@ fun LogListItem(
         modifier = modifier
     ) {
         Text(
-            text = packageName.split(".").last(),
+            text = packageName,//.split(".").last(),
             modifier = Modifier.weight(1f)
         )
         Text(

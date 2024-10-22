@@ -34,7 +34,7 @@ fun AppNavHost(
     ) {
         composable(route = HomeDestination.route) {
             HomeScreen(
-                onStartRecording = {
+                onClick = {
                     navController.navigate(LogListDestination.route + "?isRecording=true") {
                         popUpTo(navController.graph.startDestinationId) {
                             saveState = true
