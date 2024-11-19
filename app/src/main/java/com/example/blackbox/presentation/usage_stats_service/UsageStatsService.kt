@@ -218,6 +218,25 @@ class UsageStatsService : Service() {
 
     }
 
+    private fun createNotification(): Notification {
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            CHANNEL_NAME,
+            NotificationManager.IMPORTANCE_HIGH
+        )
+        val notificationManager = getSystemService(NotificationManager::class.java)
+        notificationManager.createNotificationChannel(channel)
+
+        return NotificationCompat.Builder(this,
+            CHANNEL_ID
+        )
+            .setOngoing(true)
+            .setContentTitle("Usage Stats Service")
+            .setContentText("Collecting usage stats...")
+            .setSmallIcon(R.drawable.baseline_visibility_24)
+            .build()
+    }
+
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }

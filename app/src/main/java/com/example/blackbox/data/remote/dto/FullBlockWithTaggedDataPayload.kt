@@ -1,8 +1,12 @@
 package com.example.blackbox.data.remote.dto
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
+
+@Serializable
 data class FullBlockWithTaggedDataPayload(
-    val nonce: String,
+    val protocolVersion: Int,
     val parents: List<String>,
     val payload: Payload,
-    val protocolVersion: Int
+    @Transient val nonce: String = ""
 )

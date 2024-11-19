@@ -79,7 +79,7 @@ class AppUsageViewModel @Inject constructor(
     private fun sendLogs() {
         viewModelScope.launch {
             iotaUseCases.sendData("test").collect {
-                Log.d("AppUsageViewModel", "Response: ${it.data} \n ${it.message}")
+                Log.d("Nonce", "Response: ${it.data} \n ${it.message}")
             }
         }
         _state.value = state.value.copy(
