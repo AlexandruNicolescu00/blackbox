@@ -100,6 +100,17 @@ interface PermissionTextProvider {
     fun getDescription(isPermanentlyDeclined: Boolean): String
 }
 
+class NotificationsTextProvider: PermissionTextProvider {
+    @Composable
+    override fun getDescription(isPermanentlyDeclined: Boolean): String {
+        return if(isPermanentlyDeclined) {
+            stringResource(id = R.string.post_notifications_permanently_declined)
+        } else {
+            stringResource(id = R.string.post_notifications_description)
+        }
+    }
+}
+
 class AppUsageTextProvider: PermissionTextProvider {
     @Composable
     override fun getDescription(isPermanentlyDeclined: Boolean): String {

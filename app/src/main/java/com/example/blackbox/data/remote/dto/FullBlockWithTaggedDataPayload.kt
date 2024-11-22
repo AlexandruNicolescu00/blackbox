@@ -7,6 +7,6 @@ import kotlinx.serialization.Transient
 data class FullBlockWithTaggedDataPayload(
     val protocolVersion: Int,
     val parents: List<String>,
-    val payload: Payload,
+    val payload: Payload? = null,
     @Transient val nonce: String = ""
 )

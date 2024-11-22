@@ -1,5 +1,10 @@
 package com.example.blackbox.presentation.home
 
+import android.Manifest
+import android.app.Activity
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,16 +19,21 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.blackbox.R
 import com.example.blackbox.presentation.navigation.NavigationDestination
+import com.example.blackbox.presentation.utility.NotificationsTextProvider
+import com.example.blackbox.presentation.utility.PermissionCard
 
 object HomeDestination : NavigationDestination {
     override val route = "home"
@@ -42,6 +52,12 @@ fun HomeScreen(
     onClick: () -> Unit
 ) {
     val state = viewModel.state.value
+
+    val permissionState = viewModel.permissionsManager.state.collectAsState()
+    val context = LocalContext.current as Activity
+
+    val requestActivityRecognitionPermission =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
     Column(
         modifier = modifier,
@@ -130,6 +146,23 @@ fun HomeScreen(
                 Text(text = stringResource(R.string.go_to_app_usage))
             }
         }
-
+        if (!permissionState.value.hasNotificationPermission) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val permission = Manifest.permission.POST_NOTIFICATIONS
+                PermissionCard(
+                    activity = context,
+                    permissionTextProvider = NotificationsTextProvider(),
+                    isPermanentlyDeclined = {
+                        shouldShowRequestPermissionRationale(
+                            context,
+                            permission
+                        )
+                    },
+                    onOkClick = {
+                        requestActivityRecognitionPermission.launch(permission)
+                    },
+                )
+            }
+        }
     }
 }

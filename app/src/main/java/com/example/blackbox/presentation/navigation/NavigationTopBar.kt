@@ -62,7 +62,8 @@ fun getTitleForRoute(route: String?): String {
         HomeDestination,
         LogListDestination,
         SettingsDestination,
-        RecordsLogDestination
+        RecordsLogDestination,
+        RecordDetailDestination
     )
     for (destination in destinations) {
         if (!route.isNullOrEmpty() && route.startsWith(destination.route)) {

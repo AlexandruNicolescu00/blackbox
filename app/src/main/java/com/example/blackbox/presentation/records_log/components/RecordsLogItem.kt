@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -19,9 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import com.example.blackbox.R
+import com.example.blackbox.common.dateFormat
 import com.example.blackbox.data.recorded_usage_stats.RecordedUsageStats
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 @Composable
 fun RecordsLogItem(
@@ -29,16 +29,15 @@ fun RecordsLogItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val timeFormatter = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+    val cardColor = if (record.blockId != null) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(dimensionResource(R.dimen.padding_small)),
         elevation = CardDefaults.cardElevation(dimensionResource(R.dimen.card_elevation)),
         shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius)),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
+        colors = CardDefaults.cardColors(cardColor),
         onClick = onClick
     ) {
         Column(
@@ -56,11 +55,17 @@ fun RecordsLogItem(
                 )
                 Spacer(modifier = Modifier.width(dimensionResource(R.dimen.space_small)))
                 Text(
-                    text = "${timeFormatter.format(record.startedAt)} - ${timeFormatter.format(record.endedAt)}",
+                    text = "${dateFormat(record.startedAt)} - ${dateFormat(record.endedAt!!)}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-
+                if (record.blockId != null) {
+                    Spacer(modifier = Modifier.weight(1f))
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Default.Send,
+                        contentDescription = "Sent mark",
+                    )
+                }
             }
         }
     }

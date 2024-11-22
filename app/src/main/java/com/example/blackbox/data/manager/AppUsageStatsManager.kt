@@ -26,18 +26,31 @@ class AppUsageStatsManager(
             usageStatsManager = getUsageStatsManager()
         }
         val stats = usageStatsManager!!.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, beginTime, endTime).filter{it.lastTimeVisible >= beginTime}
-        val events = usageStatsManager!!.queryEvents(beginTime, endTime)
-        if (events != null) {
-            Log.d("AppUsageStatsManager", "------------------------------------")
-            val event = UsageEvents.Event()
-            while (events.hasNextEvent()) {
-                val eventAux = UsageEvents.Event()
-                events.getNextEvent(eventAux)
 
-                Log.d("AppUsageStatsManager", "getUsageStats: ${eventAux.packageName} \n${getEventName(eventAux.eventType)} \n${eventAux.className}")
+        return stats
+    }
+
+    fun getUserEvents(beginTime: Long, endTime: Long): List<UsageEvents.Event> {
+        if (!permissionsState.value.hasUsageStatsPermission) {
+            throw SecurityException("Usage stats permission not granted ${permissionsState.value.hasUsageStatsPermission}")
+        }
+        if (usageStatsManager == null) {
+            usageStatsManager = getUsageStatsManager()
+        }
+        val usageEvents = usageStatsManager!!.queryEvents(beginTime, endTime)
+        val events = mutableListOf<UsageEvents.Event>()
+
+        if (usageEvents != null) {
+            while (usageEvents.hasNextEvent()) {
+                val eventAux = UsageEvents.Event()
+                if (eventAux.packageName != context.packageName) {
+                    events.add(eventAux)
+                }
+                usageEvents.getNextEvent(eventAux)
             }
         }
-        return stats
+
+        return events
     }
 
     fun getEventName(eventType: Int): String {

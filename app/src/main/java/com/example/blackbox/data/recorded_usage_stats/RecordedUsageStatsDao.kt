@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
 interface RecordedUsageStatsDao {
 
     @Query("SELECT * FROM recorded_usage_stats WHERE id = :id")
-    suspend fun getRecordedUsageStatsById(id: Int): RecordedUsageStats?
+    suspend fun getRecordedUsageStatsById(id: Long): RecordedUsageStats?
 
     @Query("SELECT * FROM recorded_usage_stats WHERE endedAt IS NOT NULL")
     fun getAllRecordedUsageStats(): Flow<List<RecordedUsageStats>>

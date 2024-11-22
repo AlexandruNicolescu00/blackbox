@@ -26,4 +26,7 @@
     <string name="record_detail_nav_label">Record detail</string>
     <string name="sort">Sort</string>
     <string name="go_to_app_usage">Go to app usage</string>
+    <string name="post_notifications_permanently_declined">Post notification permission is permanently declined.\\nYou can go to the app settings to grant it.</string>
+    <string name="post_notifications_description">This app needs access to notifications to display when it is recording.</string>
+    <string name="view_in_explorer">View in IOTA explorer</string>
 </resources>

@@ -3,6 +3,7 @@ package com.example.blackbox.presentation.app_usage
 import com.example.blackbox.data.app_usage.AppUsage
 
 data class AppUsageState(
+    val recordingId: Long? = null,
     val usageStats: List<AppUsage> = emptyList(),
     val currentRecordingId: Long? = null,
     val isRecording: Boolean = false,

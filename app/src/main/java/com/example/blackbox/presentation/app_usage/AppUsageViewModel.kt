@@ -3,11 +3,12 @@ package com.example.blackbox.presentation.app_usage
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.blackbox.common.dateFormat
 import com.example.blackbox.data.manager.PermissionsManager
 import com.example.blackbox.domain.repository.AppUsageRepository
 import com.example.blackbox.domain.repository.UserPreferencesRepository
-import com.example.blackbox.domain.use_case.IOTAUseCases
 import com.example.blackbox.domain.use_case.RecordingServiceUseCases
+import com.example.blackbox.domain.use_case.StartSendDataService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +22,7 @@ class AppUsageViewModel @Inject constructor(
     private val recordingServiceUseCases: RecordingServiceUseCases,
     private val appUsageRepository: AppUsageRepository,
     private val preferencesRepository: UserPreferencesRepository,
-    private val iotaUseCases: IOTAUseCases
+    private val startSendDataService: StartSendDataService,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AppUsageState())
@@ -45,12 +46,12 @@ class AppUsageViewModel @Inject constructor(
         viewModelScope.launch {
             appUsageRepository.recordingState.observeForever {
                 _state.value = state.value.copy(
+                    recordingId = it.id,
                     isRecording = it.isRecording,
                     startedAt = it.startedAt,
                     finishedAt = it.finishedAt,
                     usageStats = it.appUsages
                 )
-                Log.d("UsageStatsService", "ViewModel updated with started at: ${it.startedAt}")
             }
         }
     }
@@ -77,14 +78,18 @@ class AppUsageViewModel @Inject constructor(
     }
 
     private fun sendLogs() {
-        viewModelScope.launch {
-            iotaUseCases.sendData("test").collect {
-                Log.d("Nonce", "Response: ${it.data} \n ${it.message}")
-            }
+        var appUsage = ""
+        for (usage in state.value.usageStats) {
+            appUsage += usage.packageName + " at " + dateFormat(usage.lastTimeUsed) + "\n"
         }
-        _state.value = state.value.copy(
-            usageStats = emptyList()
-        )
+
+        Log.d("SendDataService", "Sending logs: $appUsage")
+
+        if(appUsage != "") {
+            startSendDataService.invoke(appUsage, state.value.recordingId!!)
+        }
+
+        onEvent(AppUsageEvent.StopRecording)
     }
 
     private fun recompose() {

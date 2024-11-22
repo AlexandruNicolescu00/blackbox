@@ -97,7 +97,7 @@ fun RecordsLogScreen(
 
                 items(records) { record ->
                     RecordsLogItem(
-                        record,
+                        record = record,
                         onClick = {
                             navController.navigate(
                                 RecordDetailDestination.route + "?recordId=${record.id}"

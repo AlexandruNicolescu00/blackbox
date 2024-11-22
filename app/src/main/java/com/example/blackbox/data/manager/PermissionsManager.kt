@@ -1,8 +1,12 @@
 package com.example.blackbox.data.manager
 
+import android.Manifest
 import android.app.AppOpsManager
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.system.Os.geteuid
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,6 +16,7 @@ class PermissionsManager(
 ) {
     data class PermissionsState(
         val hasUsageStatsPermission: Boolean = false,
+        val hasNotificationPermission: Boolean = false
     )
 
     private val _state = MutableStateFlow(PermissionsState())
@@ -21,9 +26,17 @@ class PermissionsManager(
     suspend fun checkPermissions() {
         _state.emit(
             state.value.copy(
-                hasUsageStatsPermission = hasUsageStatsPermission()
+                hasUsageStatsPermission = hasUsageStatsPermission(),
+                hasNotificationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) hasAccess(Manifest.permission.POST_NOTIFICATIONS) else true
             )
         )
+    }
+
+    private fun hasAccess(permission: String): Boolean {
+        return ContextCompat.checkSelfPermission(
+            context,
+            permission
+        ) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun hasUsageStatsPermission(): Boolean {

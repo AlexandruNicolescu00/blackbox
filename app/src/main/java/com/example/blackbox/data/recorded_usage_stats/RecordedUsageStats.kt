@@ -9,5 +9,6 @@ import androidx.room.PrimaryKey
 data class RecordedUsageStats(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val startedAt: Long,
-    val endedAt: Long? = null
+    val endedAt: Long? = null,
+    val blockId: String? = null
 )

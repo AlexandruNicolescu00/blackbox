@@ -9,7 +9,7 @@ class RecordedUsageStatsRepositoryImpl(
     private val recordedUsageStatsDao: RecordedUsageStatsDao
 ) : RecordedUsageStatsRepository {
 
-    override suspend fun getRecordedUsageStatsById(id: Int): RecordedUsageStats? {
+    override suspend fun getRecordedUsageStatsById(id: Long): RecordedUsageStats? {
         return recordedUsageStatsDao.getRecordedUsageStatsById(id)
     }
 

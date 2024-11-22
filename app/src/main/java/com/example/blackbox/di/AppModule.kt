@@ -11,27 +11,31 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.room.Room
 import com.example.blackbox.common.NETWORK_BASE_URL
-import com.example.blackbox.data.AppDatabase
-import com.example.blackbox.data.repository.UserPreferencesRepositoryImpl
-import com.example.blackbox.data.repository.AppUsageRepositoryImpl
-import com.example.blackbox.data.manager.PermissionsManager
-import com.example.blackbox.data.repository.RecordedUsageStatsRepositoryImpl
-import com.example.blackbox.data.manager.AppUsageStatsManager
 import com.example.blackbox.common.USER_PREFERENCES
+import com.example.blackbox.data.AppDatabase
+import com.example.blackbox.data.manager.AppUsageStatsManager
+import com.example.blackbox.data.manager.PermissionsManager
 import com.example.blackbox.data.remote.IOTAApi
+import com.example.blackbox.data.repository.AppUsageRepositoryImpl
 import com.example.blackbox.data.repository.IOTARepositoryImpl
+import com.example.blackbox.data.repository.RecordedUsageStatsRepositoryImpl
+import com.example.blackbox.data.repository.UserPreferencesRepositoryImpl
 import com.example.blackbox.domain.repository.AppUsageRepository
 import com.example.blackbox.domain.repository.IOTARepository
 import com.example.blackbox.domain.repository.RecordedUsageStatsRepository
 import com.example.blackbox.domain.repository.UserPreferencesRepository
 import com.example.blackbox.domain.use_case.GetData
+import com.example.blackbox.domain.use_case.GetRecord
 import com.example.blackbox.domain.use_case.GetRecords
 import com.example.blackbox.domain.use_case.IOTAUseCases
 import com.example.blackbox.domain.use_case.RecordingServiceUseCases
 import com.example.blackbox.domain.use_case.RecordsUseCases
 import com.example.blackbox.domain.use_case.SendData
 import com.example.blackbox.domain.use_case.StartRecordingService
+import com.example.blackbox.domain.use_case.StartSendDataService
 import com.example.blackbox.domain.use_case.StopRecordingService
+import com.example.blackbox.domain.use_case.UpdateRecord
+import com.example.blackbox.domain.use_case.ViewInExplorer
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -106,6 +110,8 @@ object AppModule {
     fun provideRecordsUseCases(repository: RecordedUsageStatsRepository): RecordsUseCases {
         return RecordsUseCases(
             getRecords = GetRecords(repository),
+            getRecord = GetRecord(repository),
+            updateRecord = UpdateRecord(repository)
         )
     }
 
@@ -136,10 +142,20 @@ object AppModule {
 
     @Singleton
     @Provides
-    fun provideIOTAUseCases(repository: IOTARepository): IOTAUseCases {
+    fun provideIOTAUseCases(
+        repository: IOTARepository,
+        @ApplicationContext context: Context
+    ): IOTAUseCases {
         return IOTAUseCases(
             getData = GetData(repository),
-            sendData = SendData(repository)
+            sendData = SendData(repository),
+            viewInExplorer = ViewInExplorer(context)
         )
+    }
+
+    @Singleton
+    @Provides
+    fun startSendDataService(@ApplicationContext context: Context): StartSendDataService {
+        return StartSendDataService(context)
     }
 }

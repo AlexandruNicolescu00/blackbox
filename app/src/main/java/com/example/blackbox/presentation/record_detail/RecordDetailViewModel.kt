@@ -4,6 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.blackbox.domain.repository.AppUsageRepository
+import com.example.blackbox.domain.use_case.IOTAUseCases
+import com.example.blackbox.domain.use_case.RecordsUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +18,8 @@ const val defaultNavigationValue = -1L
 @HiltViewModel
 class RecordDetailViewModel @Inject constructor(
     private val appUsageRepository: AppUsageRepository,
+    private val recordsUseCases: RecordsUseCases,
+    private val iotaUseCases: IOTAUseCases,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -32,6 +36,24 @@ class RecordDetailViewModel @Inject constructor(
                                 usageStats = appUsages
                             )
                         }
+                }
+                viewModelScope.launch {
+                    val record = recordsUseCases.getRecord(recordId)
+                    if (record != null) {
+                        _state.value = state.value.copy(
+                            record = record
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun onEvent(event: RecordDetailEvent) {
+        when (event) {
+            is RecordDetailEvent.ViewInExplorer -> {
+                viewModelScope.launch {
+                    iotaUseCases.viewInExplorer(state.value.record!!.blockId!!)
                 }
             }
         }

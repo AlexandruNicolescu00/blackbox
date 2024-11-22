@@ -33,6 +33,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.blackbox.R
+import com.example.blackbox.common.dateFormat
 import com.example.blackbox.presentation.app_usage.components.LogListItem
 import com.example.blackbox.presentation.navigation.NavigationDestination
 import com.example.blackbox.presentation.utility.AppUsageTextProvider
@@ -75,13 +76,13 @@ fun LogListScreen(
                     .padding(bottom = dimensionResource(R.dimen.padding_small))
             ) {
                 Text(
-                    text = "${stringResource(R.string.started_at)} ${SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(state.startedAt)}",
+                    text = "${stringResource(R.string.started_at)} ${dateFormat(state.startedAt!!)}",
                     color = MaterialTheme.colorScheme.secondary,
                     style = MaterialTheme.typography.bodySmall
                 )
                 if (state.finishedAt != null) {
                     Text(
-                        text = " - ${SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(state.finishedAt)}",
+                        text = " - ${dateFormat(state.finishedAt!!)}",
                         color = MaterialTheme.colorScheme.secondary,
                         style = MaterialTheme.typography.bodySmall
                     )

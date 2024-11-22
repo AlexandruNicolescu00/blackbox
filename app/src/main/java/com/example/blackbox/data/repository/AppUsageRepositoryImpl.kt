@@ -35,6 +35,7 @@ class AppUsageRepositoryImpl(
 }
 
 data class RecordingState(
+    val id: Long? = null,
     val startedAt: Long? = null,
     val finishedAt: Long? = null,
     val isRecording: Boolean = false,

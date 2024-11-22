@@ -1,6 +1,7 @@
 package com.example.blackbox.domain.use_case
 
 import android.util.Log
+import com.example.blackbox.common.BLOCK_TAG
 import com.example.blackbox.common.Resource
 import com.example.blackbox.common.iota.Pow
 import com.example.blackbox.data.remote.dto.FullBlockWithTaggedDataPayload
@@ -20,27 +21,33 @@ class SendData @Inject constructor(
             emit(Resource.Loading())
 
             var block = FullBlockWithTaggedDataPayload(
-                parents = repository.getTips().tips,
                 protocolVersion = 2,
+                parents = repository.getTips().tips,
                 payload = Payload(
                     type = 5,
-                    tag = "0x68656c6c6f",//BLOCK_TAG.toHexWithPrefix(),
-                    data = "0x54686973206973206120746573742064617461"//data.toHexWithPrefix()
+                    tag = BLOCK_TAG,
+                    data = data
                 ),
                 nonce = ""
             )
 
             val nonce = Pow().performPow(block)
-            Log.d("Nonce", "Nonce: $nonce")
-            Log.d("Nonce", "Parents: ${block.parents}")
-            block = block.copy(nonce = nonce.toString())
+
+            block = block.copy(
+                nonce = nonce.toString(),
+                payload = Payload(
+                    type = 5,
+                    tag = BLOCK_TAG.toHexWithPrefix(),
+                    data = data.toHexWithPrefix()
+                )
+            )
 
             val blockId = repository.sendData(block).blockId
             emit(Resource.Success(blockId))
         } catch (e: HttpException) {
             emit(Resource.Error(message = "${e.code()}: ${e.message}"))
         } catch (e: IOException) {
-            emit(Resource.Error("Couldn't reach any node. Check your internet connection"))
+            emit(Resource.Error("Couldn't reach any node. Check your internet connection. ${e.message}"))
         }
     }
 }

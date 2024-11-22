@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.app.usage.UsageEvents
 import android.app.usage.UsageStats
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -13,11 +14,11 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.example.blackbox.R
-import com.example.blackbox.data.app_usage.AppUsage
-import com.example.blackbox.data.repository.RecordingState
-import com.example.blackbox.data.recorded_usage_stats.RecordedUsageStats
-import com.example.blackbox.data.manager.AppUsageStatsManager
 import com.example.blackbox.common.REFRESH_INTERVAL
+import com.example.blackbox.data.app_usage.AppUsage
+import com.example.blackbox.data.manager.AppUsageStatsManager
+import com.example.blackbox.data.recorded_usage_stats.RecordedUsageStats
+import com.example.blackbox.data.repository.RecordingState
 import com.example.blackbox.domain.repository.AppUsageRepository
 import com.example.blackbox.domain.repository.RecordedUsageStatsRepository
 import com.example.blackbox.domain.repository.UserPreferencesRepository
@@ -57,10 +58,11 @@ class UsageStatsService : Service() {
     private var isAutoStart: Boolean = false
     private val currentUsageStats = ArrayDeque<AppUsage>()
     private var getUsageStatsJob: Job? = null
+    private var lastEndTime: Long? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        Log.d("UsageStatsService", "Service started and $lastWorkMode")
+
         val notification = createNotification()
         ServiceCompat.startForeground(
             this,
@@ -125,14 +127,31 @@ class UsageStatsService : Service() {
         }
     }
 
-    private suspend fun requestUsageStats() {
+    private suspend fun requestEvents() {
+        val begin = lastEndTime ?: startedAt!!
         val end = System.currentTimeMillis()
-        val begin = startedAt!!
+        lastEndTime = end
+        val events: List<UsageEvents.Event> = try {
+            usageStatsManager.getUserEvents(begin, end)
+        } catch (_: SecurityException) {
+            if (isAutoStart) {
+                userPreferencesRepository.toggleAutoStartMode()
+            }
+            stopSelf()
+            emptyList()
+        }
+        Log.d("Events", events.toString())
+    }
+
+    private suspend fun requestUsageStats() {
+        val begin = lastEndTime ?: startedAt!!
+        val end = System.currentTimeMillis()
+        lastEndTime = end
         val usageStats: List<UsageStats> = try {
             usageStatsManager.getUsageStats(begin, end)
                 .filter { !it.packageName.contains("launcher") }
                 .sortedByDescending { it.lastTimeUsed }
-        } catch (e: SecurityException) {
+        } catch (_: SecurityException) {
             if (isAutoStart) {
                 userPreferencesRepository.toggleAutoStartMode()
             }
@@ -171,6 +190,7 @@ class UsageStatsService : Service() {
         scope.launch {
             appUsageRepository.setRecordingState(
                 RecordingState(
+                    id = recordId,
                     appUsages = currentUsageStats.toList(),
                     isRecording = isRecording,
                     startedAt = startedAt,
@@ -182,7 +202,6 @@ class UsageStatsService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d("UsageStatsService", "Service destroyed")
         lastWorkMode = null
         serviceScope.launch {
             saveRecord()
@@ -227,9 +246,7 @@ class UsageStatsService : Service() {
         val notificationManager = getSystemService(NotificationManager::class.java)
         notificationManager.createNotificationChannel(channel)
 
-        return NotificationCompat.Builder(this,
-            CHANNEL_ID
-        )
+        return NotificationCompat.Builder(this, CHANNEL_ID)
             .setOngoing(true)
             .setContentTitle("Usage Stats Service")
             .setContentText("Collecting usage stats...")

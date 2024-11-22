@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import com.example.blackbox.R
+import com.example.blackbox.common.dateFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -18,8 +19,7 @@ fun LogListItem(
     lastTimeUsed: Long,
     modifier: Modifier = Modifier
 ) {
-    val formatter = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
-    val lastTimeFormatted = remember(lastTimeUsed) { formatter.format(Date(lastTimeUsed)) }
+    val lastTimeFormatted = remember(lastTimeUsed) { dateFormat(lastTimeUsed) }
 
     Row(
         modifier = modifier
