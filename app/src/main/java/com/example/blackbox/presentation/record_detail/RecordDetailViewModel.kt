@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.blackbox.domain.repository.AppUsageRepository
+import com.example.blackbox.domain.repository.UsageEventRepository
 import com.example.blackbox.domain.use_case.IOTAUseCases
 import com.example.blackbox.domain.use_case.RecordsUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,6 +19,7 @@ const val defaultNavigationValue = -1L
 @HiltViewModel
 class RecordDetailViewModel @Inject constructor(
     private val appUsageRepository: AppUsageRepository,
+    private val usageEventRepository: UsageEventRepository,
     private val recordsUseCases: RecordsUseCases,
     private val iotaUseCases: IOTAUseCases,
     savedStateHandle: SavedStateHandle
@@ -34,6 +36,14 @@ class RecordDetailViewModel @Inject constructor(
                         .collect { appUsages ->
                             _state.value = state.value.copy(
                                 usageStats = appUsages
+                            )
+                        }
+                }
+                viewModelScope.launch {
+                    usageEventRepository.getUsageEventByRecordingId(recordId)
+                        .collect { usageEvents ->
+                            _state.value = state.value.copy(
+                                usageEvents = usageEvents
                             )
                         }
                 }

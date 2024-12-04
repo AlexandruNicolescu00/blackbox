@@ -10,17 +10,20 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.example.blackbox.R
+import com.example.blackbox.common.NOTIFICATION_EVENT
 import com.example.blackbox.common.REFRESH_INTERVAL
+import com.example.blackbox.common.RecordingState
+import com.example.blackbox.common.SharedData
 import com.example.blackbox.data.app_usage.AppUsage
 import com.example.blackbox.data.manager.AppUsageStatsManager
 import com.example.blackbox.data.recorded_usage_stats.RecordedUsageStats
-import com.example.blackbox.data.repository.RecordingState
+import com.example.blackbox.data.usage_event.UsageEvent
 import com.example.blackbox.domain.repository.AppUsageRepository
 import com.example.blackbox.domain.repository.RecordedUsageStatsRepository
+import com.example.blackbox.domain.repository.UsageEventRepository
 import com.example.blackbox.domain.repository.UserPreferencesRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -42,9 +45,14 @@ class UsageStatsService : Service() {
     @Inject
     lateinit var appUsageRepository: AppUsageRepository
     @Inject
+    lateinit var usageEventRepository: UsageEventRepository
+    @Inject
     lateinit var recordedUsageStatsRepository: RecordedUsageStatsRepository
     @Inject
     lateinit var userPreferencesRepository: UserPreferencesRepository
+
+    @Inject
+    lateinit var sharedData: SharedData
 
     private val serviceJob = Job()
     private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
@@ -57,6 +65,7 @@ class UsageStatsService : Service() {
     private var seconds: Long = 0
     private var isAutoStart: Boolean = false
     private val currentUsageStats = ArrayDeque<AppUsage>()
+    private val currentUsageEvents = ArrayDeque<UsageEvent>()
     private var getUsageStatsJob: Job? = null
     private var lastEndTime: Long? = null
 
@@ -91,7 +100,7 @@ class UsageStatsService : Service() {
                     if (isAutoStart) {
                         startAutoCollection()
                     } else {
-                        startUsageStatsCollection()
+                        startUsageEventsCollection()
                     }
                 }
             }
@@ -106,7 +115,7 @@ class UsageStatsService : Service() {
                 createRecord()
                 var i = 0
                 while (i < seconds / REFRESH_INTERVAL && isAutoStart) {
-                    requestUsageStats()
+                    requestEvents()
                     delay(REFRESH_INTERVAL * 1000)
                     i += 1
                 }
@@ -116,23 +125,31 @@ class UsageStatsService : Service() {
         }
     }
 
-    private fun startUsageStatsCollection() {
+    private fun startUsageEventsCollection() {
         getUsageStatsJob?.cancel()
         getUsageStatsJob = serviceScope.launch {
             createRecord()
             while (true) {
-                requestUsageStats()
+                requestEvents()
                 delay(REFRESH_INTERVAL * 1000)
             }
         }
     }
 
+    val lookingEvents = listOf<Int>(
+        UsageEvents.Event.ACTIVITY_RESUMED,
+        UsageEvents.Event.FOREGROUND_SERVICE_START,
+        UsageEvents.Event.FOREGROUND_SERVICE_STOP,
+        NOTIFICATION_EVENT,
+    )
+
     private suspend fun requestEvents() {
         val begin = lastEndTime ?: startedAt!!
         val end = System.currentTimeMillis()
         lastEndTime = end
-        val events: List<UsageEvents.Event> = try {
-            usageStatsManager.getUserEvents(begin, end)
+        var events: List<UsageEvents.Event> = try {
+            usageStatsManager.getUserEvents(begin, end) // Need to filter here because in manager event.packageName is null
+                .filter { it.packageName != this.packageName && !it.packageName.contains("launcher") &&  it.eventType in lookingEvents }
         } catch (_: SecurityException) {
             if (isAutoStart) {
                 userPreferencesRepository.toggleAutoStartMode()
@@ -140,16 +157,47 @@ class UsageStatsService : Service() {
             stopSelf()
             emptyList()
         }
-        Log.d("Events", events.toString())
+        events = events.distinctBy { Pair(it.timeStamp, it.eventType) }
+
+        for (event in events) {
+            val packageName = event.packageName
+            val timestamp = event.timeStamp
+            var eventType = ""
+
+            when(event.eventType) {
+                UsageEvents.Event.ACTIVITY_RESUMED -> {
+                    eventType = "APP CHANGED"
+                }
+                UsageEvents.Event.FOREGROUND_SERVICE_START -> {
+                    eventType = "FOREGROUND SERVICE START"
+                }
+                UsageEvents.Event.FOREGROUND_SERVICE_STOP -> {
+                    eventType = "FOREGROUND SERVICE STOP"
+                }
+                NOTIFICATION_EVENT -> {
+                    eventType = "NOTIFICATION ARRIVED"
+                }
+            }
+
+            val usageEvent = UsageEvent(
+                packageName = packageName,
+                timestamp = timestamp,
+                eventType = eventType,
+                recordingId = recordId
+            )
+            usageEventRepository.insertUsageEvent(usageEvent)
+            currentUsageEvents.add(usageEvent)
+            updateRecordingState(true)
+        }
     }
 
     private suspend fun requestUsageStats() {
-        val begin = lastEndTime ?: startedAt!!
+        val begin = startedAt!!
         val end = System.currentTimeMillis()
         lastEndTime = end
         val usageStats: List<UsageStats> = try {
             usageStatsManager.getUsageStats(begin, end)
-                .filter { !it.packageName.contains("launcher") }
+                .filter { it.packageName != this.packageName && !it.packageName.contains("launcher") }
                 .sortedByDescending { it.lastTimeUsed }
         } catch (_: SecurityException) {
             if (isAutoStart) {
@@ -181,17 +229,17 @@ class UsageStatsService : Service() {
                 currentUsageStats.addFirst(newElement)
                 appUsageRepository.insertAppUsage(newElement)
             }
+            updateRecordingState(isRecording = true)
         }
-        updateRecordingState(isRecording = true)
     }
 
     private fun updateRecordingState(isRecording: Boolean) {
-        val scope = CoroutineScope(Dispatchers.Main)
-        scope.launch {
-            appUsageRepository.setRecordingState(
+        serviceScope.launch {
+            sharedData.recordingState.postValue(
                 RecordingState(
                     id = recordId,
                     appUsages = currentUsageStats.toList(),
+                    usageEvents = currentUsageEvents.toList(),
                     isRecording = isRecording,
                     startedAt = startedAt,
                     finishedAt = finishedAt
@@ -219,12 +267,15 @@ class UsageStatsService : Service() {
             id = recordId
         )
         currentUsageStats.clear()
+        currentUsageEvents.clear()
+        updateRecordingState(isRecording = true)
     }
 
     private suspend fun saveRecord() {
         finishedAt = System.currentTimeMillis()
         updateRecordingState(isRecording = false)
-        val recordsNumber = appUsageRepository.countAppUsageByRecordingId(recordId)
+        var recordsNumber = appUsageRepository.countAppUsageByRecordingId(recordId)
+        recordsNumber += usageEventRepository.countUsageEventByRecordingId(recordId)
         if (recordsNumber == 0) { // Don't save empty records
             recordedUsageStatsRepository.deleteRecordedUsageStats(record!!)
         } else {
@@ -257,7 +308,4 @@ class UsageStatsService : Service() {
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
-
-
-
 }

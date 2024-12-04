@@ -6,6 +6,7 @@ import com.example.blackbox.data.remote.dto.FullBlockWithTaggedDataPayload
 import kotlin.collections.plus
 
 const val HASH_LENGTH = 243 // Hash length for Curl-P-81
+const val MIN_POW_SCORE = 1500 // Minimum PoW score for a valid PoW
 
 class Pow : IotaLocalPow {
 
@@ -13,22 +14,20 @@ class Pow : IotaLocalPow {
     override fun performPow(block: FullBlockWithTaggedDataPayload): ULong {
         // Compute the BLAKE2b-256 hash of the serialized message excluding the 8-byte Nonce field
         val serializedMessage = serializeMessage(block)
-
         val powDigest = blake2b(serializedMessage)
+        val startTime = System.currentTimeMillis()
         // and convert the hash into its 192-trit b1t6 encoding.
         val powDigestTrits = b1t6Encode(powDigest)
-
-        var nonce = 0uL
         val curl = JCurl()
-
+        var nonce = 0uL
         while (true) {
             val nonceBites = nonce.toLittleEndianByteArray(8)
-            // Take the 8-byte Nonce in little-endian representation, convert it into its 48-trit b1t6 encoding and append it to the hash trits.
+            // Take the 8-byte Nonce in little-endian representation,
+            // convert it into its 48-trit b1t6 encoding and append it to the hash trits.
             val nonceTrits = b1t6Encode(nonceBites)
             // Add a padding of three zero trits to create a 243-trit string.
             val inputTrits = powDigestTrits + nonceTrits + byteArrayOf(0, 0, 0)
             // Compute the Curl-P-81 hash.
-
             curl.absorb(inputTrits)
             val powHash = ByteArray(HASH_LENGTH)
             curl.squeeze(powHash)
@@ -38,7 +37,9 @@ class Pow : IotaLocalPow {
             val message = serializedMessage + nonceBites
             val score = Math.pow(3.0, trailingZeros.toDouble()) / message.size
 
-            if (score >= 1500) {
+            if (score >= MIN_POW_SCORE) {
+                val duration = System.currentTimeMillis() - startTime
+                Log.d("Time", "nonce $nonce in $duration ms")
                 Log.d("Nonce", "Score: $score")
                 return nonce
             }

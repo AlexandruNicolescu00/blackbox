@@ -20,7 +20,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.blackbox.R
-import com.example.blackbox.presentation.app_usage.components.LogListItem
+import com.example.blackbox.presentation.app_usage.components.AppUsageItem
+import com.example.blackbox.presentation.app_usage.components.UsageEventItem
 import com.example.blackbox.presentation.navigation.NavigationDestination
 
 object RecordDetailDestination : NavigationDestination {
@@ -48,11 +49,22 @@ fun RecordDetailScreen(
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space_small))
         ) {
-            items(state.usageStats) { usageStats ->
-                LogListItem(
-                    packageName = usageStats.packageName,
-                    lastTimeUsed = usageStats.lastTimeUsed
-                )
+            if (state.usageStats.isNotEmpty()) {
+                items(state.usageStats) { usageStats ->
+                    AppUsageItem(
+                        packageName = usageStats.packageName,
+                        lastTimeUsed = usageStats.lastTimeUsed
+                    )
+                }
+            }
+            if (state.usageEvents.isNotEmpty()) {
+                items(state.usageEvents) { usageEvent ->
+                    UsageEventItem(
+                        packageName = usageEvent.packageName,
+                        eventType = usageEvent.eventType,
+                        timestamp = usageEvent.timestamp,
+                    )
+                }
             }
         }
         if (state.record?.blockId != null) {

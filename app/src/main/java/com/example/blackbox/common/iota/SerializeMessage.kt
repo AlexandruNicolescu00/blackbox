@@ -19,7 +19,7 @@ fun serializeMessage(
 
     var parents = ByteArray(0)
     for (parent in block.parents) {
-        parents += if (parent.startsWith("0x")) parent.removePrefix("0x").hexToByteArray() else parent.hexToByteArray()
+        parents += parent.removePrefix("0x").hexToByteArray()
     }
     serializedMessage += parents
 
@@ -52,7 +52,7 @@ fun Any.toLittleEndianByteArray(size: Int): ByteArray {
             is UByte -> this.toByte()
             is UInt -> (this shr (i * 8) and 0xFFu).toByte()
             is ULong -> (this shr (i * 8) and 0xFFu).toByte()
-            is Byte -> this // Byte is 1 byte
+            is Byte -> this
             is Int -> (this shr (i * 8) and 0xFF).toByte()
             is Long -> (this shr (i * 8) and 0xFF).toByte()
             else -> throw IllegalArgumentException("Unsupported type: ${this::class.simpleName}")

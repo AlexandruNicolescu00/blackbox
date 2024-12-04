@@ -34,12 +34,11 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.blackbox.R
 import com.example.blackbox.common.dateFormat
-import com.example.blackbox.presentation.app_usage.components.LogListItem
+import com.example.blackbox.presentation.app_usage.components.AppUsageItem
+import com.example.blackbox.presentation.app_usage.components.UsageEventItem
 import com.example.blackbox.presentation.navigation.NavigationDestination
 import com.example.blackbox.presentation.utility.AppUsageTextProvider
 import com.example.blackbox.presentation.utility.PermissionCard
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 object LogListDestination : NavigationDestination {
     override val route = "app_usage"
@@ -101,7 +100,7 @@ fun LogListScreen(
                         // Do something on pause or dispose effect
                     }
                 }
-                if (state.usageStats.isEmpty()) {
+                if (state.usageStats.isEmpty() && state.usageEvents.isEmpty()) {
                     Column(
                         modifier = modifier
                             .fillMaxSize(),
@@ -118,10 +117,17 @@ fun LogListScreen(
                         .fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space_small))
                 ) {
-                    items(state.usageStats) { usageStats ->
-                        LogListItem(
+                    /*items(state.usageStats) { usageStats ->
+                        AppUsageItem(
                             packageName = usageStats.packageName,
                             lastTimeUsed = usageStats.lastTimeUsed
+                        )
+                    }*/
+                    items(state.usageEvents) { usageEvent ->
+                        UsageEventItem(
+                            packageName = usageEvent.packageName,
+                            eventType = usageEvent.eventType,
+                            timestamp = usageEvent.timestamp
                         )
                     }
                 }
@@ -165,6 +171,7 @@ fun LogListScreen(
                 Spacer(modifier = Modifier.width(dimensionResource(R.dimen.space_small)))
                 Button(
                     onClick = { viewModel.onEvent(AppUsageEvent.SendLogs) },
+                    enabled = !state.isSending,
                     modifier = Modifier
                         .weight(1f)
                 ) {

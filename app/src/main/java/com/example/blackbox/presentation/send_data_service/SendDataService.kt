@@ -13,6 +13,9 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.example.blackbox.common.Resource
+import com.example.blackbox.domain.repository.IOTARepository
+import com.example.blackbox.domain.use_case.EvaluationCongestionDelay
+import com.example.blackbox.domain.use_case.EvaluationEventsNonce
 import com.example.blackbox.domain.use_case.IOTAUseCases
 import com.example.blackbox.domain.use_case.RecordsUseCases
 import dagger.hilt.android.AndroidEntryPoint
@@ -59,21 +62,21 @@ class SendDataService : Service() {
             }
         )
 
-        val appUsage = intent?.getStringExtra("APP_USAGE")
+        val usageEvent = intent?.getStringExtra("APP_USAGE")
         val recordingId = intent?.getLongExtra("RECORDING_ID", -1)
 
-        if (appUsage == null || recordingId == null || recordingId == -1L) {
+        if (usageEvent == null || recordingId == null || recordingId == -1L) {
             stopSelf()
             return START_NOT_STICKY
         }
 
-        enqueueRequest(appUsage, recordingId)
+        enqueueRequest(usageEvent, recordingId)
 
         return START_STICKY
     }
 
-    private fun enqueueRequest(appUsage: String, recordingId: Long) {
-        callQueue.add(Pair<String, Long>(appUsage, recordingId))
+    private fun enqueueRequest(usageEvent: String, recordingId: Long) {
+        callQueue.add(Pair<String, Long>(usageEvent, recordingId))
         if (!isProcessing) {
             isProcessing = true
             processQueue()
@@ -83,18 +86,16 @@ class SendDataService : Service() {
     private fun processQueue() {
         serviceScope.launch {
             while (callQueue.isNotEmpty()) {
-                val (appUsage, recordingId) = callQueue.poll()
-                if (appUsage != null && recordingId != null) {
-                    sendData(appUsage, recordingId)
-                }
+                val (usageEvent, recordingId) = callQueue.poll()
+                sendData(usageEvent, recordingId)
             }
             isProcessing = false
             stopSelf()
         }
     }
 
-    private suspend fun sendData(appUsage: String, recordingId: Long) {
-        iotaUseCases.sendData(appUsage).collect { result ->
+    private suspend fun sendData(usageEvent: String, recordingId: Long) {
+        iotaUseCases.sendData(usageEvent).collect { result ->
             when (result) {
                 is Resource.Success -> {
                     Log.d("SendDataService", "Data sent successfully id: ${result.data}")
@@ -105,12 +106,13 @@ class SendDataService : Service() {
                         )
                         recordsUseCases.updateRecord(newRecord)
                     }
+                    return@collect
                 }
                 is Resource.Error -> {
                     Log.e("SendDataService", "Error sending data: ${result.message}")
-                    enqueueRequest(appUsage, recordingId)
+                    enqueueRequest(usageEvent, recordingId)
+                    return@collect
                 }
-
                 is Resource.Loading -> {
                     Log.d("SendDataService", "Loading...")
                 }

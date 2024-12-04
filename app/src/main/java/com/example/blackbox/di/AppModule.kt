@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.room.Room
 import com.example.blackbox.common.NETWORK_BASE_URL
+import com.example.blackbox.common.SharedData
 import com.example.blackbox.common.USER_PREFERENCES
 import com.example.blackbox.data.AppDatabase
 import com.example.blackbox.data.manager.AppUsageStatsManager
@@ -19,10 +20,12 @@ import com.example.blackbox.data.remote.IOTAApi
 import com.example.blackbox.data.repository.AppUsageRepositoryImpl
 import com.example.blackbox.data.repository.IOTARepositoryImpl
 import com.example.blackbox.data.repository.RecordedUsageStatsRepositoryImpl
+import com.example.blackbox.data.repository.UsageEventRepositoryImpl
 import com.example.blackbox.data.repository.UserPreferencesRepositoryImpl
 import com.example.blackbox.domain.repository.AppUsageRepository
 import com.example.blackbox.domain.repository.IOTARepository
 import com.example.blackbox.domain.repository.RecordedUsageStatsRepository
+import com.example.blackbox.domain.repository.UsageEventRepository
 import com.example.blackbox.domain.repository.UserPreferencesRepository
 import com.example.blackbox.domain.use_case.GetData
 import com.example.blackbox.domain.use_case.GetRecord
@@ -59,7 +62,9 @@ object AppModule {
             app,
             AppDatabase::class.java,
             AppDatabase.DATABASE_NAME
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
@@ -70,8 +75,20 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideUsageEventRepository(db: AppDatabase): UsageEventRepository {
+        return UsageEventRepositoryImpl(db.usageEventDao)
+    }
+
+    @Provides
+    @Singleton
     fun provideRecordedUsageStatsRepository(db: AppDatabase): RecordedUsageStatsRepository {
         return RecordedUsageStatsRepositoryImpl(db.recordedUsageStatsDao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSharedData(): SharedData {
+        return SharedData
     }
 
     @Provides

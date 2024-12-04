@@ -15,10 +15,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +33,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.blackbox.R
+import com.example.blackbox.domain.use_case.EvaluationEventsNonce
 import com.example.blackbox.presentation.navigation.NavigationDestination
 import com.example.blackbox.presentation.utility.NotificationsTextProvider
 import com.example.blackbox.presentation.utility.PermissionCard
@@ -47,6 +50,7 @@ object HomeDestination : NavigationDestination {
 
 @Composable
 fun HomeScreen(
+    snackBarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
     onClick: () -> Unit
@@ -163,6 +167,13 @@ fun HomeScreen(
                     },
                 )
             }
+        }
+    }
+    LaunchedEffect(Unit) {
+        viewModel.messageChannel.collect { message ->
+            snackBarHostState.showSnackbar(
+                message = message
+            )
         }
     }
 }

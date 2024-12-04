@@ -3,9 +3,9 @@ package com.example.blackbox.presentation.app_usage
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.blackbox.common.SharedData
 import com.example.blackbox.common.dateFormat
 import com.example.blackbox.data.manager.PermissionsManager
-import com.example.blackbox.domain.repository.AppUsageRepository
 import com.example.blackbox.domain.repository.UserPreferencesRepository
 import com.example.blackbox.domain.use_case.RecordingServiceUseCases
 import com.example.blackbox.domain.use_case.StartSendDataService
@@ -20,9 +20,9 @@ import javax.inject.Inject
 class AppUsageViewModel @Inject constructor(
     val permissionsManager: PermissionsManager,
     private val recordingServiceUseCases: RecordingServiceUseCases,
-    private val appUsageRepository: AppUsageRepository,
     private val preferencesRepository: UserPreferencesRepository,
     private val startSendDataService: StartSendDataService,
+    private val sharedData: SharedData
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AppUsageState())
@@ -44,14 +44,18 @@ class AppUsageViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            appUsageRepository.recordingState.observeForever {
+            sharedData.recordingState.observeForever {
                 _state.value = state.value.copy(
                     recordingId = it.id,
                     isRecording = it.isRecording,
                     startedAt = it.startedAt,
                     finishedAt = it.finishedAt,
-                    usageStats = it.appUsages
+                    usageStats = it.appUsages,
+                    usageEvents = it.usageEvents
                 )
+                if (state.value.isAutoStart && !state.value.isRecording) {
+                    onEvent(AppUsageEvent.SendLogs)
+                }
             }
         }
     }
@@ -60,6 +64,9 @@ class AppUsageViewModel @Inject constructor(
         when (event) {
             is AppUsageEvent.StartRecording -> {
                 if (!state.value.isRecording) {
+                    _state.value = state.value.copy(
+                        isSending = false
+                    )
                     recordingServiceUseCases.startRecordingService()
                 }
             }
@@ -78,12 +85,17 @@ class AppUsageViewModel @Inject constructor(
     }
 
     private fun sendLogs() {
+        _state.value = state.value.copy(
+            isSending = true
+        )
+
         var appUsage = ""
         for (usage in state.value.usageStats) {
             appUsage += usage.packageName + " at " + dateFormat(usage.lastTimeUsed) + "\n"
         }
-
-        Log.d("SendDataService", "Sending logs: $appUsage")
+        for (event in state.value.usageEvents) {
+            appUsage += event.eventType + " by " + event.packageName + " at " + dateFormat(event.timestamp) + "\n"
+        }
 
         if(appUsage != "") {
             startSendDataService.invoke(appUsage, state.value.recordingId!!)

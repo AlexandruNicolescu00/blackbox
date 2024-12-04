@@ -43,9 +43,7 @@ class AppUsageStatsManager(
         if (usageEvents != null) {
             while (usageEvents.hasNextEvent()) {
                 val eventAux = UsageEvents.Event()
-                if (eventAux.packageName != context.packageName) {
-                    events.add(eventAux)
-                }
+                events.add(eventAux)
                 usageEvents.getNextEvent(eventAux)
             }
         }
@@ -71,6 +69,7 @@ class AppUsageStatsManager(
             UsageEvents.Event.ACTIVITY_STOPPED -> return "ACTIVITY_STOPPED"
             UsageEvents.Event.DEVICE_SHUTDOWN -> return "DEVICE_SHUTDOWN"
             UsageEvents.Event.DEVICE_STARTUP -> return "DEVICE_STARTUP"
+            10 -> return "NOTIFICATION_ARRIVED"
             else -> return eventType.toString()
         }
     }

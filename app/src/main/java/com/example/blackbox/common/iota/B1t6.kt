@@ -29,7 +29,7 @@ class B1t6 {
         return len * TRITS_PER_BYTE
     }
 
-    // MustPutTryteTrits converts v in [-13,13] to its corresponding 3-trit value and writes this to trits.
+    // MustPutTryteTrits converts value in [-13,13] to its corresponding 3-trit value and writes this to trits.
     private fun mustPutTryteTrits(trits: Trits, offset: Int, value: Byte) {
         val idx = value - MIN_TRYTE_VALUE
         require(trits.size >= 3) { "The 'trits' array must have at least 3 elements." }
